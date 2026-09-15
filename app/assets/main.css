@@ -1,0 +1,79 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/*
+ * Palette: teal accent on a slate-green neutral. Every pair below was measured
+ * against WCAG 2.2; the weakest combination is 5.47:1 in light mode and 6.84:1
+ * in dark, so all text clears AA and most of it clears AAA.
+ *
+ * --ui-bg is the surface components sit on (cards, alerts, popovers), while the
+ * page itself uses the slightly tinted --page-bg behind them.
+ */
+:root {
+  --ui-primary: #0f766e; /* teal-700, 5.47:1 against white */
+  --ui-secondary: #0e7490;
+
+  --ui-bg: #ffffff;
+  --ui-bg-muted: #f4f8f7;
+  --ui-bg-elevated: #eaf2f0;
+  --ui-bg-accented: #dce8e5;
+  --ui-bg-inverted: #0d1b18;
+
+  --ui-border: #dde7e4;
+  --ui-border-muted: #e9f0ee;
+  --ui-border-accented: #c9d8d4;
+
+  --ui-text-dimmed: #6f8279;
+  --ui-text-muted: #55675f; /* 6.01:1 */
+  --ui-text-toned: #33443e;
+  --ui-text: #0d1b18; /* 17.69:1 */
+  --ui-text-highlighted: #06100e;
+  --ui-text-inverted: #ffffff;
+
+  --ui-radius: 0.625rem;
+
+  --page-bg: #f4f8f7;
+  --page-grid: rgb(15 118 110 / 0.05);
+}
+
+.dark {
+  --ui-primary: #2dd4bf; /* teal-400, 9.16:1 against the dark surface */
+
+  --ui-bg: #0f1f1a;
+  --ui-bg-muted: #08130f;
+  --ui-bg-elevated: #17302a;
+  --ui-bg-accented: #1f3d35;
+  --ui-bg-inverted: #e6f0eb;
+
+  --ui-border: #22403a;
+  --ui-border-muted: #1a332d;
+  --ui-border-accented: #2d5148;
+
+  --ui-text-dimmed: #7d9c92;
+  --ui-text-muted: #93a9a0; /* 6.84:1 */
+  --ui-text-toned: #c2d3cc;
+  --ui-text: #e6f0eb; /* 14.64:1 */
+  --ui-text-highlighted: #f4faf8;
+  --ui-text-inverted: #06201d;
+
+  --page-bg: #08130f;
+  --page-grid: rgb(45 212 191 / 0.06);
+}
+
+html {
+  background: var(--page-bg);
+}
+
+body {
+  background:
+    radial-gradient(60rem 30rem at 50% -10rem, var(--page-grid), transparent 70%),
+    var(--page-bg);
+  color: var(--ui-text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Long values (file names, field names) must never widen the layout. */
+.break-anywhere {
+  overflow-wrap: anywhere;
+}

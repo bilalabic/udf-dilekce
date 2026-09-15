@@ -1,0 +1,33 @@
+{
+  "name": "toplu-dilekce-uretici",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "fixtures": "node scripts/make-fixtures.mjs && node scripts/make-udf-fixture.mjs"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.11.1",
+    "docxtemplater": "^3.47.0",
+    "nuxt": "^4.5.2",
+    "pizzip": "^3.1.7",
+    "read-excel-file": "^5.8.5",
+    "tailwindcss": "^4.3.3",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.132",
+    "@types/node": "^26.4.1",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "vue-tsc": "^2.1.0",
+    "write-excel-file": "^2.0.0"
+  }
+}

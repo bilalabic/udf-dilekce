@@ -1,0 +1,21 @@
+# bağımlılıklar
+node_modules
+
+# Nuxt derleme çıktıları
+.nuxt
+.output
+dist
+.data
+
+# dağıtım
+.vercel
+
+# ortam
+.env
+.env.*
+!.env.example
+
+# çeşitli
+*.log
+.DS_Store
+Thumbs.db

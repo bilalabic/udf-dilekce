@@ -1,0 +1,8 @@
+# Depoda satır sonu her zaman LF; checkout'ta platforma bırakılır.
+* text=auto eol=lf
+
+# Test dosyaları ikilidir: satır sonu dönüşümü bunları BOZAR.
+*.docx binary
+*.udf  binary
+*.xlsx binary
+*.sgn  binary
