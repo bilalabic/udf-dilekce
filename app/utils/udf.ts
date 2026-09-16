@@ -267,8 +267,16 @@ interface Coverage {
 
 /**
  * Real UYAP documents partition the text: no gaps, no overlaps, and exactly one
- * trailing newline left uncovered. Checking this after rendering is the cheapest
- * way to catch a stale offset before a broken file reaches the user.
+ * trailing newline left uncovered - every real fixture in this repository was
+ * measured and every one of them does exactly that. Checking this after
+ * rendering is the cheapest way to catch a stale offset before a broken file
+ * reaches the user.
+ *
+ * The callers deliberately check less than that: they reject gaps, overlaps and
+ * coverage that runs past the end of the text, but accept ANY uncovered tail.
+ * Other producers of .udf files - converters, third-party editors - tile the
+ * text their own way, and rejecting them would buy nothing: an uncovered tail
+ * cannot break a document, while a stale offset can.
  */
 export function coverageOf(xmlChunk: string): Coverage {
   let cursor = 0

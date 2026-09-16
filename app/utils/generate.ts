@@ -16,21 +16,17 @@ export interface GenerateOptions {
   chunkSize?: number
   /** Placeholders to leave in the document as ordinary text. */
   ignoredFields?: IgnoredFields
-  /** Lets the user stop a long batch; already-built documents are kept. */
+  /**
+   * Lets the user stop a long batch. Cancelling keeps nothing: a half-finished
+   * archive looks exactly like a complete one once it has been downloaded, and
+   * that is a worse outcome than having to run the batch again.
+   */
   signal?: AbortSignal
 }
 
 /** Hands control back to the browser so the progress bar can repaint. */
 function yieldToBrowser(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0))
-}
-
-/**
- * Excel row number as the user sees it: the header occupies row 1, so the
- * first data row is row 2. Error messages must match what is on their screen.
- */
-function excelRowNumber(index: number): number {
-  return index + 2
 }
 
 export async function generateDocuments(
@@ -54,18 +50,20 @@ export async function generateDocuments(
       )
     }
 
-    const row = excel.rows[index]!
+    const { excelRow, values } = excel.rows[index]!
 
     try {
       documents.push({
-        fileName: makeUnique(buildDocumentName(index, row, extension), takenNames),
-        data: renderTemplate(template, row, ignoredFields)
+        fileName: makeUnique(buildDocumentName(index, values, extension), takenNames),
+        data: renderTemplate(template, values, ignoredFields)
       })
     } catch (error) {
       // One bad row must not destroy the work done for every other row. The
-      // row is recorded and reported instead - never dropped in silence.
+      // row is recorded and reported instead - never dropped in silence. The
+      // number comes from the row itself, because blank rows that were skipped
+      // while reading mean this loop's index is not the Excel line number.
       skipped.push({
-        excelRow: excelRowNumber(index),
+        excelRow,
         reason: error instanceof AppError ? error.detail ?? error.message : String(error)
       })
     }
@@ -111,6 +109,12 @@ export function buildReport(
 
   if (excel.notices.skippedEmptyRows > 0) {
     lines.push(`Bos satir        : ${excel.notices.skippedEmptyRows} (okunurken atlandi)`)
+  }
+
+  if (excel.notices.roundedNumberCells > 0) {
+    lines.push(
+      `Yuvarlanan sayi  : ${excel.notices.roundedNumberCells} hucre (15 haneden uzun, Excel yuvarlamis)`
+    )
   }
 
   if (result.skipped.length > 0) {

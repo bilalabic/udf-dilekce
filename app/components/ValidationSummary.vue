@@ -30,6 +30,13 @@ const noticeList = computed(() => {
       `${n.reformattedDateCells} hücre Excel’de gerçek tarih olduğu için gg.aa.yyyy biçiminde yazıldı.`
     )
   }
+  // The rounding happened inside Excel, before the file was opened here, so
+  // this is the one notice the application cannot repair - only report.
+  if (n.roundedNumberCells > 0) {
+    items.push(
+      `${n.roundedNumberCells} hücre 15 haneden uzun bir sayı olduğu için Excel’de yuvarlanmış; okunan değer yazdığınızdan farklı olabilir. O sütunu Excel’de “Metin” biçimine çevirip yeniden kaydedin.`
+    )
+  }
   return items
 })
 

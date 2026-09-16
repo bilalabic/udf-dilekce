@@ -1,8 +1,18 @@
 import readXlsxFile, { readSheetNames } from 'read-excel-file'
-import type { ExcelData, ExcelNotices, ExcelRow } from '~/types'
+import type { DataRow, ExcelData, ExcelNotices, ExcelRow } from '~/types'
 import { AppError } from '~/utils/errors'
 
 type RawCell = string | number | boolean | Date | null | undefined
+
+/**
+ * The header occupies row 1, so the first data row is row 2. Row numbers are
+ * computed from a row's position in the FILE, never from its position in the
+ * array this module returns: a blank row in the middle of a sheet is skipped
+ * but still uses up a row number, and the reader keeps blank rows in place
+ * (it only trims at the end), so the two counts drift apart the moment a user
+ * leaves a gap in their list.
+ */
+const FIRST_DATA_ROW = 2
 
 function pad(value: number): string {
   return String(value).padStart(2, '0')
@@ -26,6 +36,16 @@ export function cellToString(value: RawCell): string {
   if (typeof value === 'boolean') return value ? 'Evet' : 'Hayır'
   if (value instanceof Date) return formatDate(value)
   return String(value)
+}
+
+/**
+ * A whole number Excel could not store exactly - more than 15 significant
+ * digits, such as an IBAN typed into a number cell. The rounding happened in
+ * Excel, long before this file was opened here, so the original digits are
+ * unrecoverable and the only honest thing left to do is say so.
+ */
+function isRoundedNumber(value: RawCell): boolean {
+  return typeof value === 'number' && Number.isInteger(value) && !Number.isSafeInteger(value)
 }
 
 export function normaliseHeaders(rawHeaders: RawCell[]): string[] {
@@ -54,18 +74,24 @@ export function normaliseHeaders(rawHeaders: RawCell[]): string[] {
 }
 
 export interface RowsResult {
-  rows: ExcelRow[]
+  rows: DataRow[]
   skippedEmptyRows: number
   reformattedDateCells: number
+  roundedNumberCells: number
 }
 
+/**
+ * Turns the rows below the header into data rows. `rawRows` must start at the
+ * first data row, because each row's number is derived from its index here.
+ */
 export function buildRows(headers: string[], rawRows: RawCell[][]): RowsResult {
-  const rows: ExcelRow[] = []
+  const rows: DataRow[] = []
   let skippedEmptyRows = 0
   let reformattedDateCells = 0
+  let roundedNumberCells = 0
 
-  for (const rawRow of rawRows) {
-    const row: ExcelRow = {}
+  rawRows.forEach((rawRow, rawIndex) => {
+    const values: ExcelRow = {}
     let hasValue = false
 
     headers.forEach((header, index) => {
@@ -74,17 +100,20 @@ export function buildRows(headers: string[], rawRows: RawCell[][]): RowsResult {
       // Counted so the interface can say a date was rewritten, rather than
       // quietly changing what the user typed.
       if (raw instanceof Date) reformattedDateCells += 1
+      if (isRoundedNumber(raw)) roundedNumberCells += 1
 
       const value = cellToString(raw)
-      row[header] = value
+      values[header] = value
       if (value !== '') hasValue = true
     })
 
-    if (hasValue) rows.push(row)
+    // The row keeps the number it has in the file, so a later error message
+    // points at the line the user can actually open and fix.
+    if (hasValue) rows.push({ excelRow: rawIndex + FIRST_DATA_ROW, values })
     else skippedEmptyRows += 1
-  }
+  })
 
-  return { rows, skippedEmptyRows, reformattedDateCells }
+  return { rows, skippedEmptyRows, reformattedDateCells, roundedNumberCells }
 }
 
 export function parseRows(
@@ -97,13 +126,17 @@ export function parseRows(
   }
 
   const headers = normaliseHeaders(rawRows[0] ?? [])
-  const { rows, skippedEmptyRows, reformattedDateCells } = buildRows(headers, rawRows.slice(1))
+  const { rows, skippedEmptyRows, reformattedDateCells, roundedNumberCells } = buildRows(
+    headers,
+    rawRows.slice(1)
+  )
 
   const notices: ExcelNotices = {
     sheetName: sheet.name,
     sheetCount: sheet.count,
     skippedEmptyRows,
-    reformattedDateCells
+    reformattedDateCells,
+    roundedNumberCells
   }
 
   return {

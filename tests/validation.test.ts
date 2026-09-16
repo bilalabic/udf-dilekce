@@ -17,8 +17,17 @@ function excel(headers: string[], rowCount = 1): ExcelData {
   return {
     fileName: 'liste.xlsx',
     headers,
-    rows: Array.from({ length: rowCount }, () => Object.fromEntries(headers.map((h) => [h, 'x']))),
-    notices: { sheetName: 'Sayfa 1', sheetCount: 1, skippedEmptyRows: 0, reformattedDateCells: 0 }
+    rows: Array.from({ length: rowCount }, (_, index) => ({
+      excelRow: index + 2,
+      values: Object.fromEntries(headers.map((h) => [h, 'x']))
+    })),
+    notices: {
+      sheetName: 'Sayfa 1',
+      sheetCount: 1,
+      skippedEmptyRows: 0,
+      reformattedDateCells: 0,
+      roundedNumberCells: 0
+    }
   }
 }
 
