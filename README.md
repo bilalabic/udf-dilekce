@@ -25,7 +25,7 @@ Tüm işlem tarayıcınızda yapılır — dosyalarınız hiçbir sunucuya gitme
   tarih — hepsi ekranda bildirilir.
 - **Hatalı satır partiyi çökertmez.** O satır atlanır, kalanlar üretilir, sebebi ZIP'in
   içindeki `_RAPOR.txt` dosyasına yazılır.
-- **Gerçek UYAP dosyalarıyla doğrulanmıştır.** 112 otomatik test, bunların 21'i gerçek
+- **Gerçek UYAP dosyalarıyla doğrulanmıştır.** 117 otomatik test, bunların 21'i gerçek
   UYAP Doküman Editörü çıktıları üzerinde.
 
 ---
@@ -101,6 +101,11 @@ dosyayı zaten kabul etmez ve sebebini söyler.
 **Veri**
 
 - Kimlik numarası gibi uzun sayılar bilimsel gösterime dönüşmez.
+- Telefon numarası, IBAN, hesap numarası gibi **numaraları Excel içinde “Metin” biçiminde
+  tutun.** Sayı biçimindeki bir numaranın başındaki sıfır (`0532…`) dosya kaydedilirken
+  Excel tarafından atılır, 15 haneden uzun olanlar yuvarlanır; bu kayıp dosya buraya
+  gelmeden önce olur ve geri alınamaz. Yuvarlanmış hücreler ekranda ve `_RAPOR.txt`
+  içinde bildirilir.
 - Tarihleri Excel'de **metin** olarak tutmanız önerilir; o zaman belgede yazdığınız gibi görünür.
   Gerçek tarih hücreleri `gg.aa.yyyy` biçiminde yazılır ve bu ekranda bildirilir.
 
@@ -113,13 +118,16 @@ dosyayı zaten kabul etmez ve sebebini söyler.
 **Sessiz karar yoktur**
 
 Okuma sırasında verilen her karar ekranda bildirilir: çok sayfalı Excel'de hangi sayfanın
-okunduğu, kaç boş satırın atlandığı, kaç hücrenin tarih olduğu için yeniden biçimlendirildiği.
+okunduğu, kaç boş satırın atlandığı, kaç hücrenin tarih olduğu için yeniden
+biçimlendirildiği, kaç hücrenin Excel tarafından zaten yuvarlanmış olduğu.
 
 **Hatalı satırlar**
 
 Bir satır hata verirse o satır atlanır, diğerleri üretilir. Atlananlar hem ekranda hem de
-ZIP içindeki `_RAPOR.txt` dosyasında **Excel satır numarasıyla** listelenir — arşivi günler
-sonra açtığınızda eksiği fark edersiniz. Hiçbir belge üretilemezse işlem hatayla durur.
+ZIP içindeki `_RAPOR.txt` dosyasında **dosyadaki gerçek Excel satır numarasıyla**
+listelenir — listenin ortasında boş satır bıraktıysanız numara yine doğrudur. Arşivi
+günler sonra açtığınızda eksiği fark edersiniz. Hiçbir belge üretilemezse işlem hatayla
+durur.
 
 **Büyük listeler**
 
@@ -190,6 +198,9 @@ Gerçek UYAP çıktıları incelenerek doğrulanan format kuralları:
 | Paragraf sonu | Paragrafın kendi satır sonu karakteri, kapsadığı aralığın **içindedir** |
 | Kodlama | BOM'suz UTF-8, satır sonu LF |
 
+Formatın ayrıntılı dökümü — ölçülmüş değerler, eleman/öznitelik dağarcığı ve hangi
+iddiaların **doğrulanmadığı** — [`docs/udf-format.md`](docs/udf-format.md) dosyasındadır.
+
 ## Doğrulama
 
 En önemli değişmez şudur: **üretilen belgede ofsetlerin işaret ettiği parçalar birleştirildiğinde
@@ -211,9 +222,15 @@ Bunlar üzerinde doğrulananlar:
   karakterler ve `<table>` / `<field>` / `<webID>` bölümleri yerinde kalır.
 
 ```bash
-npm test          # 112 test
+npm test          # 117 test
 npm run typecheck # TypeScript denetimi
 npm run fixtures  # örnek dosyaları yeniden üretir
+```
+
+Bir `.udf` dosyasının içini ölçmek için (dokümandaki sayılar bununla üretilmiştir):
+
+```bash
+node scripts/udf-probe.mjs tests/fixtures/gercek-basvuru.udf
 ```
 
 ## Geliştirme
@@ -261,6 +278,12 @@ Sunucu tarafı çalışma zamanı gerekmez.
 
 Vercel'e bağlıdır: `main` dalına her push otomatik dağıtılır. Yapılandırma
 [`vercel.json`](vercel.json) dosyasındadır.
+
+Sunulan güvenlik başlıkları: `Content-Security-Policy`, `X-Content-Type-Options: nosniff`,
+`X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`. CSP `default-src 'self'` ile başlar
+ve dış bağlantıya izin vermez — uygulamanın hiçbir dış istek yapmaması böylece tarayıcı
+tarafından da zorlanır. `script-src` içindeki `'unsafe-inline'` Nuxt'un ürettiği satır içi
+`importmap` etiketi içindir; statik barındırmada nonce üretilemez.
 
 ## Bilinen sınırlar
 

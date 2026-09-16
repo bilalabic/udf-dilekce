@@ -153,8 +153,8 @@ describe('UDF pipeline', () => {
       const xml = new PizZip(document.data).file('content.xml')!.asText()
       const text = /<content\b[^>]*>\s*<!\[CDATA\[([\s\S]*?)]]>/.exec(xml)![1]!
 
-      expect(text).toContain(excel.rows[index]!.AD_SOYAD!)
-      expect(text).toContain(excel.rows[index]!.TC_KIMLIK!)
+      expect(text).toContain(excel.rows[index]!.values.AD_SOYAD!)
+      expect(text).toContain(excel.rows[index]!.values.TC_KIMLIK!)
 
       // Offsets must still tile the text exactly, row by row, leaving only the
       // document's final newline uncovered.
@@ -226,7 +226,10 @@ describe('ignored placeholders', () => {
     const withoutColumn: ExcelData = {
       ...excel,
       headers: excel.headers.filter((h) => h !== 'Madde 5'),
-      rows: excel.rows.map(({ 'Madde 5': _unused, ...rest }) => rest)
+      rows: excel.rows.map(({ excelRow, values: { 'Madde 5': _unused, ...rest } }) => ({
+        excelRow,
+        values: rest
+      }))
     }
 
     const { documents } = await generateDocuments(template, withoutColumn, {
@@ -259,13 +262,21 @@ describe('the report inside the archive', () => {
         fileName: 'l.xlsx',
         headers: [],
         rows: [],
-        notices: { sheetName: 'Sayfa 1', sheetCount: 1, skippedEmptyRows: 2, reformattedDateCells: 0 }
+        notices: {
+          sheetName: 'Sayfa 1',
+          sheetCount: 1,
+          skippedEmptyRows: 2,
+          reformattedDateCells: 0,
+          roundedNumberCells: 1
+        }
       },
       { documents: [], skipped: [{ excelRow: 12, reason: 'bozuk deger' }] }
     )
 
     expect(report).toContain('Excel satir 12: bozuk deger')
     expect(report).toContain('Bos satir        : 2')
+    // A number Excel had already rounded is part of the durable record too.
+    expect(report).toContain('Yuvarlanan sayi  : 1 hucre')
     expect(report).toContain('URETILMEDI')
   })
 

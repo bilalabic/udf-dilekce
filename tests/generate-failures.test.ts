@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { parseRows } from '~/utils/excel'
 import type { ExcelData, TemplateData } from '~/types'
 
 // renderTemplate is mocked so a row failure can be provoked deterministically.
@@ -34,8 +35,15 @@ function excel(names: string[]): ExcelData {
   return {
     fileName: 'liste.xlsx',
     headers: ['AD_SOYAD'],
-    rows: names.map((AD_SOYAD) => ({ AD_SOYAD })),
-    notices: { sheetName: 'Sayfa 1', sheetCount: 1, skippedEmptyRows: 0, reformattedDateCells: 0 }
+    // No blank rows here, so row N of the list really is Excel row N + 1.
+    rows: names.map((AD_SOYAD, index) => ({ excelRow: index + 2, values: { AD_SOYAD } })),
+    notices: {
+      sheetName: 'Sayfa 1',
+      sheetCount: 1,
+      skippedEmptyRows: 0,
+      reformattedDateCells: 0,
+      roundedNumberCells: 0
+    }
   }
 }
 
@@ -97,5 +105,37 @@ describe('cancellation', () => {
     })
 
     await expect(promise).rejects.toThrow(AppError)
+  })
+})
+
+describe('a sheet with a gap in the middle', () => {
+  it('reports the line the user sees, not the position in the list', async () => {
+    // Excel as the user sees it: row 1 headers, 2 Ahmet, 3 blank, 4 PATLAT,
+    // 5 Mehmet. The blank row is skipped while reading, so the failing row is
+    // the SECOND item of the list but the FOURTH line of the file.
+    const data = parseRows('liste.xlsx', [['AD_SOYAD'], ['Ahmet'], [null], ['PATLAT'], ['Mehmet']])
+
+    expect(data.rows).toHaveLength(3)
+    expect(data.notices.skippedEmptyRows).toBe(1)
+
+    const result = await generateDocuments(template(), data)
+
+    expect(result.skipped).toEqual([{ excelRow: 4, reason: 'Error: bozuk satir' }])
+    expect(buildReport(template(), data, result)).toContain('Excel satir 4')
+  })
+
+  it('keeps counting from the file even after several gaps', async () => {
+    const data = parseRows('liste.xlsx', [
+      ['AD_SOYAD'],
+      [null],
+      ['Ahmet'],
+      [null],
+      [null],
+      ['PATLAT']
+    ])
+
+    const { skipped } = await generateDocuments(template(), data)
+
+    expect(skipped.map((row) => row.excelRow)).toEqual([6])
   })
 })

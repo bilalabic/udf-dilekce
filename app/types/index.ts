@@ -2,6 +2,18 @@
 export type ExcelRow = Record<string, string>
 
 /**
+ * A data row together with the line it came from. The two travel as one value
+ * because blank rows are skipped while reading: a row's position in this array
+ * is NOT its position in the file, and every message the user sees has to name
+ * the line they can actually go and look at.
+ */
+export interface DataRow {
+  /** Row number as the user sees it in Excel; the header occupies row 1. */
+  excelRow: number
+  values: ExcelRow
+}
+
+/**
  * Decisions the reader made on the user's behalf. Every one of these is
  * surfaced in the interface: the application must never quietly drop data.
  */
@@ -12,13 +24,19 @@ export interface ExcelNotices {
   skippedEmptyRows: number
   /** Cells Excel stores as real dates, rewritten as gg.aa.yyyy. */
   reformattedDateCells: number
+  /**
+   * Cells holding a whole number too long for Excel to store exactly. Excel
+   * rounded them before this application ever opened the file, so the damage
+   * cannot be undone here - only reported.
+   */
+  roundedNumberCells: number
 }
 
 export interface ExcelData {
   fileName: string
   /** Trimmed, de-duplicated column names from the first sheet row. */
   headers: string[]
-  rows: ExcelRow[]
+  rows: DataRow[]
   notices: ExcelNotices
 }
 
